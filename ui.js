@@ -9,6 +9,7 @@ $(async function() {
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
   const $navWelcome = $("#nav-welcome");
+  const $navSubmit = $("#nav-submit");
 
   // global storyList variable
   let storyList = null;
@@ -90,6 +91,11 @@ $(async function() {
     $allStoriesList.show();
   });
 
+  $("body").on("click", "#nav-submit", function() {
+    hideElements();
+    $("#submit-form").show();
+  })
+
   $("body").on("submit", "#submit-form", async function(event) {
     event.preventDefault();
     let userToken = localStorage.getItem("token", currentUser.loginToken);
@@ -99,10 +105,11 @@ $(async function() {
       url: $("#url").val()
     }
 
-    let newlyAddedStory = await addStory(userToken, newStory);
-
+    let newlyAddedStory = (await StoryList.addStory(userToken, newStory)).data.story;
     const result = generateStoryHTML(newlyAddedStory);
-    $allStoriesList.append(result);
+    $allStoriesList.prepend(result);
+    hideElements();
+    $allStoriesList.show();
 
   })
 
@@ -123,7 +130,6 @@ $(async function() {
     await generateStories();
 
     if (currentUser) {
-      console.log(currentUser.name);
       showNavForLoggedInUser();
     }
   }
@@ -209,6 +215,7 @@ $(async function() {
     $navLogOut.show();
     $navWelcome.show();
     $("#nav-user-profile").text(currentUser.name);
+    $navSubmit.show();
   }
 
   /* simple function to pull the hostname from a URL */

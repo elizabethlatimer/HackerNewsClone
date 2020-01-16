@@ -43,9 +43,9 @@ class StoryList {
    * Returns the new story object
    */
 
-  async addStory(userToken, newStory) {
-    let addedStory = await axios.get("https://hack-or-snooze-v3.herokuapp.com/stories", 
-    {params: {token:userToken, story:newStory}});
+  static async addStory(userToken, newStory) {
+    let addedStory = await axios.post("https://hack-or-snooze-v3.herokuapp.com/stories", 
+    {token:userToken, story:newStory});
 
     return addedStory;
   }
