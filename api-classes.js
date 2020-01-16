@@ -43,10 +43,11 @@ class StoryList {
    * Returns the new story object
    */
 
-  async addStory(user, newStory) {
-    // TODO - Implement this functions!
-    // this function should return the newly created story so it can be used in
-    // the script.js file where it will be appended to the DOM
+  async addStory(userToken, newStory) {
+    let addedStory = await axios.get("https://hack-or-snooze-v3.herokuapp.com/stories", 
+    {params: {token:userToken, story:newStory}});
+
+    return addedStory;
   }
 }
 

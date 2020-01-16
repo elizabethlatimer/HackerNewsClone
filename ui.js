@@ -8,6 +8,7 @@ $(async function() {
   const $ownStories = $("#my-articles");
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
+  const $navWelcome = $("#nav-welcome");
 
   // global storyList variable
   let storyList = null;
@@ -89,6 +90,22 @@ $(async function() {
     $allStoriesList.show();
   });
 
+  $("body").on("submit", "#submit-form", async function(event) {
+    event.preventDefault();
+    let userToken = localStorage.getItem("token", currentUser.loginToken);
+    let newStory = {
+      author: $("#author").val(),
+      title: $("#title").val(),
+      url: $("#url").val()
+    }
+
+    let newlyAddedStory = await addStory(userToken, newStory);
+
+    const result = generateStoryHTML(newlyAddedStory);
+    $allStoriesList.append(result);
+
+  })
+
   /**
    * On page load, checks local storage to see if the user is already logged in.
    * Renders page information accordingly.
@@ -106,6 +123,7 @@ $(async function() {
     await generateStories();
 
     if (currentUser) {
+      console.log(currentUser.name);
       showNavForLoggedInUser();
     }
   }
@@ -189,6 +207,8 @@ $(async function() {
   function showNavForLoggedInUser() {
     $navLogin.hide();
     $navLogOut.show();
+    $navWelcome.show();
+    $("#nav-user-profile").text(currentUser.name);
   }
 
   /* simple function to pull the hostname from a URL */
