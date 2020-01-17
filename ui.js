@@ -89,6 +89,7 @@ $(async function() {
 
   $("body").on("click", "#nav-all", async function() {
     hideElements();
+    generateFavorites();
     await generateStories();
     $allStoriesList.show();
   });
@@ -100,6 +101,7 @@ $(async function() {
 
   $("body").on("click", "#nav-favorites", async function() {
     hideElements();
+    generateFavorites();
     $("#favorited-articles").show();
   });
 
@@ -152,11 +154,14 @@ $(async function() {
     //  to get an instance of User with the right details
     //  this is designed to run once, on page load
     currentUser = await User.getLoggedInUser(token, username);
-    await generateStories();
 
     if (currentUser) {
       showNavForLoggedInUser();
+      //update favorites list
+      generateFavorites();
     }
+
+    await generateStories();
   }
 
   /**
@@ -172,11 +177,15 @@ $(async function() {
     $loginForm.trigger("reset");
     $createAccountForm.trigger("reset");
 
-    // show the stories
-    $allStoriesList.show();
-
+    
     // update the navigation bar
     showNavForLoggedInUser();
+    
+    //update favorites list
+    generateFavorites();
+
+    // show the stories
+    $allStoriesList.show();
   }
 
   /**
@@ -201,16 +210,21 @@ $(async function() {
 
   async function generateFavorites() {
     // get an instance of StoryList
-    const storyListInstance = await StoryList.getStories();
-    // update our global variable
-    storyList = storyListInstance;
-    // empty out that part of the page
-    $allStoriesList.empty();
+    const favorites = currentUser.favorites;
+    // loop through all of our favorites and generate HTML for them
+    $favoritedArticles.empty();
+    for (let favorite of favorites) {
+      const result = generateStoryHTML(favorite);
+      $favoritedArticles.append(result);
 
-    // loop through all of our stories and generate HTML for them
-    for (let story of storyList.stories) {
-      const result = generateStoryHTML(story);
-      $allStoriesList.append(result);
+      let $favoriteInMainListCheck = $allStoriesList.find("li#"+favorite.storyId) || null;
+      if ($favoriteInMainListCheck) {
+        let $thisStar = $favoriteInMainListCheck.find(".fa-star");
+        if ($thisStar.hasClass("far")) {
+          $thisStar.toggleClass("far fas");
+        }
+      }
+      //CHECK IF THIS STORY'S ID ALREADY EXISTS IN the $allStoriesList && its child star has a classname of 'far', toggle to 'fas'
     }
   }
 
@@ -220,11 +234,12 @@ $(async function() {
 
   function generateStoryHTML(story) {
     let hostName = getHostName(story.url);
-
+    let favoritedStatus = $("#favorited-articles").find(`#${story.storyId}`);
+    let starClass = (generateStoryHTML.caller === generateFavorites || favoritedStatus.length > 0) ? "fas" : "far";
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
-      <i class="fa-star far"></i>
+      <i class="fa-star ${starClass}"></i>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
         </a>
