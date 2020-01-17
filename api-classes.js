@@ -152,6 +152,16 @@ class User {
     existingUser.ownStories = response.data.user.stories.map(s => new Story(s));
     return existingUser;
   }
+
+  static async addFavorite(userToken, username, storyId) {
+    let favoritePostURL = `https://hack-or-snooze-v3.herokuapp.com/users/${username}/favorites/${storyId}`;
+    let existingUser = (await axios.post(favoritePostURL, {token: userToken})).data.user;
+    return existingUser;
+  }
+
+  static async removeFavorite() {
+
+  }
 }
 
 /**

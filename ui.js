@@ -10,7 +10,8 @@ $(async function() {
   const $navLogOut = $("#nav-logout");
   const $navWelcome = $("#nav-welcome");
   const $navSubmit = $("#nav-submit");
-
+  const $navFavorites = $("#nav-favorites");  
+ 
   // global storyList variable
   let storyList = null;
 
@@ -96,6 +97,11 @@ $(async function() {
     $("#submit-form").show();
   })
 
+  $("body").on("click", "#nav-favorites", async function() {
+    hideElements();
+    $("#favorited-articles").show();
+  });
+
   $("body").on("submit", "#submit-form", async function(event) {
     event.preventDefault();
     let userToken = localStorage.getItem("token", currentUser.loginToken);
@@ -110,6 +116,22 @@ $(async function() {
     $allStoriesList.prepend(result);
     hideElements();
     $allStoriesList.show();
+  })
+
+  $("body").on("click", ".fa-star", async function(e) {
+    let userToken = localStorage.getItem("token", currentUser.loginToken);  
+    let username = localStorage.getItem("username", currentUser.username);
+    let storyId = $(e.target).parent().attr("id");
+    let thisStar = $(e.target);
+    if (thisStar.hasClass("far")) {
+      let response = await User.addFavorite(userToken, username, storyId);
+      currentUser = response.error ? currentUser : response;
+      thisStar.parent().clone().prependTo("#favorited-articles");
+    }
+    else {
+
+    }
+    thisStar.toggleClass("far fas");
 
   })
 
@@ -174,6 +196,21 @@ $(async function() {
     }
   }
 
+  async function generateFavorites() {
+    // get an instance of StoryList
+    const storyListInstance = await StoryList.getStories();
+    // update our global variable
+    storyList = storyListInstance;
+    // empty out that part of the page
+    $allStoriesList.empty();
+
+    // loop through all of our stories and generate HTML for them
+    for (let story of storyList.stories) {
+      const result = generateStoryHTML(story);
+      $allStoriesList.append(result);
+    }
+  }
+
   /**
    * A function to render HTML for an individual Story instance
    */
@@ -184,6 +221,7 @@ $(async function() {
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
+      <i class="fa-star far"></i>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
         </a>
@@ -216,6 +254,7 @@ $(async function() {
     $navWelcome.show();
     $("#nav-user-profile").text(currentUser.name);
     $navSubmit.show();
+    $navFavorites.show();
   }
 
   /* simple function to pull the hostname from a URL */
