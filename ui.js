@@ -10,7 +10,8 @@ $(async function() {
   const $navLogOut = $("#nav-logout");
   const $navWelcome = $("#nav-welcome");
   const $navSubmit = $("#nav-submit");
-  const $navFavorites = $("#nav-favorites");  
+  const $navFavorites = $("#nav-favorites");
+  const $favoritedArticles = $("#favorited-articles");  
  
   // global storyList variable
   let storyList = null;
@@ -126,13 +127,15 @@ $(async function() {
     if (thisStar.hasClass("far")) {
       let response = await User.addFavorite(userToken, username, storyId);
       currentUser = response.error ? currentUser : response;
+      thisStar.toggleClass("far fas");
       thisStar.parent().clone().prependTo("#favorited-articles");
     }
     else {
+      let response = await User.removeFavorite(userToken, username, storyId);
+      currentUser = response.error ? currentUser : response;
+      thisStar.toggleClass("far fas");
 
     }
-    thisStar.toggleClass("far fas");
-
   })
 
   /**
@@ -243,7 +246,8 @@ $(async function() {
       $filteredArticles,
       $ownStories,
       $loginForm,
-      $createAccountForm
+      $createAccountForm,
+      $favoritedArticles
     ];
     elementsArr.forEach($elem => $elem.hide());
   }
