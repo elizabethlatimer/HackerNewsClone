@@ -1,4 +1,4 @@
-$(async function() {
+$(async function () {
   // cache some selectors we'll be using quite a bit
   const $allStoriesList = $("#all-articles-list");
   const $submitForm = $("#submit-form");
@@ -10,9 +10,11 @@ $(async function() {
   const $navLogOut = $("#nav-logout");
   const $navWelcome = $("#nav-welcome");
   const $navSubmit = $("#nav-submit");
+  const $navMyArticles = $("#nav-own");
   const $navFavorites = $("#nav-favorites");
-  const $favoritedArticles = $("#favorited-articles");  
- 
+  const $favoritedArticles = $("#favorited-articles");
+  const $myArticles = $("#my-articles");
+
   // global storyList variable
   let storyList = null;
 
@@ -26,7 +28,7 @@ $(async function() {
    *  If successfully we will setup the user instance
    */
 
-  $loginForm.on("submit", async function(evt) {
+  $loginForm.on("submit", async function (evt) {
     evt.preventDefault(); // no page-refresh on submit
 
     // grab the username and password
@@ -46,7 +48,7 @@ $(async function() {
    *  If successfully we will setup a new user instance
    */
 
-  $createAccountForm.on("submit", async function(evt) {
+  $createAccountForm.on("submit", async function (evt) {
     evt.preventDefault(); // no page refresh
 
     // grab the required fields
@@ -65,7 +67,7 @@ $(async function() {
    * Log Out Functionality
    */
 
-  $navLogOut.on("click", function() {
+  $navLogOut.on("click", function () {
     // empty out local storage
     localStorage.clear();
     // refresh the page, clearing memory
@@ -76,7 +78,7 @@ $(async function() {
    * Event Handler for Clicking Login
    */
 
-  $navLogin.on("click", function() {
+  $navLogin.on("click", function () {
     // Show the Login and Create Account Forms
     $loginForm.slideToggle();
     $createAccountForm.slideToggle();
@@ -87,25 +89,25 @@ $(async function() {
    * Event handler for Navigation to Homepage
    */
 
-  $("body").on("click", "#nav-all", async function() {
+  $("body").on("click", "#nav-all", async function () {
     hideElements();
     generateFavorites();
     await generateStories();
     $allStoriesList.show();
   });
 
-  $("body").on("click", "#nav-submit", function() {
+  $("body").on("click", "#nav-submit", function () {
     hideElements();
     $("#submit-form").show();
   })
 
-  $("body").on("click", "#nav-favorites", async function() {
+  $("body").on("click", "#nav-favorites", async function () {
     hideElements();
     generateFavorites();
     $("#favorited-articles").show();
   });
 
-  $("body").on("submit", "#submit-form", async function(event) {
+  $("body").on("submit", "#submit-form", async function (event) {
     event.preventDefault();
     let userToken = localStorage.getItem("token", currentUser.loginToken);
     let newStory = {
@@ -117,26 +119,25 @@ $(async function() {
     let newlyAddedStory = (await StoryList.addStory(userToken, newStory)).data.story;
     const result = generateStoryHTML(newlyAddedStory);
     $allStoriesList.prepend(result);
+    currentUser.ownStories.push(newlyAddedStory);
     hideElements();
     $allStoriesList.show();
   })
 
-  $("body").on("click", ".fa-star", async function(e) {
-    let userToken = localStorage.getItem("token", currentUser.loginToken);  
+  $("body").on("click", ".fa-star", async function (e) {
+    let userToken = localStorage.getItem("token", currentUser.loginToken);
     let username = localStorage.getItem("username", currentUser.username);
     let storyId = $(e.target).parent().attr("id");
     let thisStar = $(e.target);
     if (thisStar.hasClass("far")) {
-      let response = await User.addFavorite(userToken, username, storyId);
-      currentUser = response.error ? currentUser : response;
+      let response = await currentUser.addFavorite(userToken, username, storyId);
+      currentUser.favorites = response.error ? currentUser.favorites : response.favorites;
       thisStar.toggleClass("far fas");
-      thisStar.parent().clone().prependTo("#favorited-articles");
     }
     else {
-      let response = await User.removeFavorite(userToken, username, storyId);
-      currentUser = response.error ? currentUser : response;
+      let response = await currentUser.removeFavorite(userToken, username, storyId);
+      currentUser.favorites = response.error ? currentUser.favorites : response.favorites;
       thisStar.toggleClass("far fas");
-
     }
   })
 
@@ -157,7 +158,6 @@ $(async function() {
 
     if (currentUser) {
       showNavForLoggedInUser();
-      //update favorites list
       generateFavorites();
     }
 
@@ -177,12 +177,13 @@ $(async function() {
     $loginForm.trigger("reset");
     $createAccountForm.trigger("reset");
 
-    
+
     // update the navigation bar
     showNavForLoggedInUser();
-    
+
     //update favorites list
     generateFavorites();
+    generateStories();
 
     // show the stories
     $allStoriesList.show();
@@ -209,33 +210,38 @@ $(async function() {
   }
 
   async function generateFavorites() {
-    // get an instance of StoryList
+    // access favorites array of current User instance
     const favorites = currentUser.favorites;
     // loop through all of our favorites and generate HTML for them
     $favoritedArticles.empty();
     for (let favorite of favorites) {
       const result = generateStoryHTML(favorite);
       $favoritedArticles.append(result);
-
-      let $favoriteInMainListCheck = $allStoriesList.find("li#"+favorite.storyId) || null;
-      if ($favoriteInMainListCheck) {
-        let $thisStar = $favoriteInMainListCheck.find(".fa-star");
-        if ($thisStar.hasClass("far")) {
-          $thisStar.toggleClass("far fas");
-        }
-      }
-      //CHECK IF THIS STORY'S ID ALREADY EXISTS IN the $allStoriesList && its child star has a classname of 'far', toggle to 'fas'
     }
+  }
+
+  async function generateOwnStories() {
+    const ownStories = currentUser.ownStories;
+
+    $ownStories;
+
   }
 
   /**
    * A function to render HTML for an individual Story instance
    */
-
+  
   function generateStoryHTML(story) {
-    let hostName = getHostName(story.url);
-    let favoritedStatus = $("#favorited-articles").find(`#${story.storyId}`);
-    let starClass = (generateStoryHTML.caller === generateFavorites || favoritedStatus.length > 0) ? "fas" : "far";
+    const hostName = getHostName(story.url);
+    let matchingStoryInFavorites;
+    if (currentUser) {
+      matchingStoryInFavorites = (currentUser.favorites.find(function (thisFavorite) {
+        return (story.storyId === thisFavorite.storyId);
+      }));
+    }
+    const calledByFavorites = (generateStoryHTML.caller === generateFavorites);
+    let starClass = (calledByFavorites || matchingStoryInFavorites) ? "fas" : "far";
+    
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
@@ -274,6 +280,7 @@ $(async function() {
     $("#nav-user-profile").text(currentUser.name);
     $navSubmit.show();
     $navFavorites.show();
+    $navMyArticles.show();
   }
 
   /* simple function to pull the hostname from a URL */

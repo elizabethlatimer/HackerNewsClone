@@ -153,13 +153,13 @@ class User {
     return existingUser;
   }
 
-  static async addFavorite(userToken, username, storyId) {
+  async addFavorite(userToken, username, storyId) {
     let favoritePostURL = `https://hack-or-snooze-v3.herokuapp.com/users/${username}/favorites/${storyId}`;
     let existingUser = (await axios.post(favoritePostURL, {token: userToken})).data.user;
     return existingUser;
   }
   
-  static async removeFavorite(userToken, username, storyId) {
+  async removeFavorite(userToken, username, storyId) {
     let unfavoritePostURL = `https://hack-or-snooze-v3.herokuapp.com/users/${username}/favorites/${storyId}`;
     let existingUser = (await axios.delete(unfavoritePostURL, {data: {token: userToken}})).data.user;
     return existingUser;
