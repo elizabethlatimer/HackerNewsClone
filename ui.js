@@ -5,7 +5,6 @@ $(async function () {
   const $filteredArticles = $("#filtered-articles");
   const $loginForm = $("#login-form");
   const $createAccountForm = $("#create-account-form");
-  const $ownStories = $("#my-articles");
   const $navLogin = $("#nav-login");
   const $navLogOut = $("#nav-logout");
   const $navWelcome = $("#nav-welcome");
@@ -107,6 +106,13 @@ $(async function () {
     $("#favorited-articles").show();
   });
 
+  $("body").on("click", "#nav-own", async function () {
+    hideElements();
+    generateFavorites();
+    generateOwnStories();
+    $("#my-articles").show();
+  });
+
   $("body").on("submit", "#submit-form", async function (event) {
     event.preventDefault();
     let userToken = localStorage.getItem("token", currentUser.loginToken);
@@ -141,6 +147,26 @@ $(async function () {
     }
   })
 
+  function findIndexToRemove(relevantCurrentUserList, targetId) {
+    let indexToRemove = relevantCurrentUserList.findIndex(function (thisStory) {
+      return (thisStory.storyId === targetId);
+    });
+    return indexToRemove
+  }
+
+  $("body").on("click", '.trash-can', async function(e){
+    e.preventDefault();
+    let userToken = localStorage.getItem("token", currentUser.loginToken);
+    let storyId = $(e.target).attr("data-storyId");
+    await StoryList.deleteStory(userToken, storyId);
+    currentUser.ownStories.splice(findIndexToRemove(currentUser.ownStories, storyId), 1);
+    currentUser.favorites.splice(findIndexToRemove(currentUser.favorites, storyId), 1);
+    generateOwnStories();
+    generateFavorites();
+    generateStories();
+    
+    // matchingStories.forEach( story => story.delete)
+  });
   /**
    * On page load, checks local storage to see if the user is already logged in.
    * Renders page information accordingly.
@@ -222,8 +248,11 @@ $(async function () {
 
   async function generateOwnStories() {
     const ownStories = currentUser.ownStories;
-
-    $ownStories;
+    $myArticles.empty();
+    for (let own of ownStories) {
+      const result = generateStoryHTML(own);
+      $myArticles.append(result);
+    }
 
   }
 
@@ -241,17 +270,20 @@ $(async function () {
     }
     const calledByFavorites = (generateStoryHTML.caller === generateFavorites);
     let starClass = (calledByFavorites || matchingStoryInFavorites) ? "fas" : "far";
-    
+
+    let deleteButton = currentUser && currentUser.username === story.username ? `<i class="trash-can fa-trash fas" data-storyId="${story.storyId}"></i>` : '';
+
     // render story markup
     const storyMarkup = $(`
       <li id="${story.storyId}">
       <i class="fa-star ${starClass}"></i>
         <a class="article-link" href="${story.url}" target="a_blank">
           <strong>${story.title}</strong>
-        </a>
+        </a> ${deleteButton}
         <small class="article-author">by ${story.author}</small>
         <small class="article-hostname ${hostName}">(${hostName})</small>
         <small class="article-username">posted by ${story.username}</small>
+        
       </li>
     `);
 
@@ -265,7 +297,7 @@ $(async function () {
       $submitForm,
       $allStoriesList,
       $filteredArticles,
-      $ownStories,
+      $myArticles,
       $loginForm,
       $createAccountForm,
       $favoritedArticles

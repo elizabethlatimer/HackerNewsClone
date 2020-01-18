@@ -49,6 +49,10 @@ class StoryList {
 
     return addedStory;
   }
+
+  static async deleteStory(userToken, storyId) {
+    let deletedStory = await axios.delete(`https://hack-or-snooze-v3.herokuapp.com/stories/${storyId}`,{data: {token: userToken}});
+  }
 }
 
 
